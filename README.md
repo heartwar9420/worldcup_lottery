@@ -1,5 +1,20 @@
 # 2026 世界盃抽獎系統
 
+##  專案更新紀錄 (Feature Updates & Changes)
+本專案已針對面試需求完成以下優化與功能擴充：
+
+### 1. UI 改進
+* **[UI 改進]**：後台獎池設定增加輸入驗證，確保名額設定的合理性與即時錯誤回饋。
+
+### 2. 響應式優化
+* 全面重構前台與後台的 CSS 配置，導入響應式設計，確保在手機、平板與 PC 桌面均能維持良好的操作體驗。
+
+### 3. 架構遷移與雲端部署
+* **[Database]**：將本機 SQLite 遷移至 **Supabase (PostgreSQL)**，實現雲端化資料存取，支援多人同時連線。
+* **[Deployment]**：完成 **Vercel** 部署，優化建置腳本，移除了不必要的本機環境檢查以利雲端執行。
+
+---
+
 這是一個以 2026 美加墨世界盃為主題的本機抽獎網站，適合線下活動在單台電腦上執行。參與者可在前台透過輪盤進行抽獎，管理員則可在後台設定一等獎、二等獎、三等獎名額，系統會隨機產生球隊與獎項的對應關係。
 
 ## 專案介紹
@@ -119,13 +134,13 @@ pnpm run rebuild:sqlite
 
 ## 環境變數
 
-目前可選用以下環境變數：
+請在 Vercel 的 Environment Variables 或本機的 `.env` 檔案中設定以下變數：
 
 | 變數 | 說明 |
 | --- | --- |
-| `SESSION_SECRET` | 後台登入 Session 簽章用密鑰。未設定時會使用本機開發預設值。 |
-
-本機活動使用時建議設定 `SESSION_SECRET`，避免沿用預設值。
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 專案 URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 公開 API Key |
+| `SESSION_SECRET` | 用於加密 Session 的隨機字串 (可自行生成) |
 
 ## 檔案目錄結構
 
