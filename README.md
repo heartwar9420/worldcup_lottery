@@ -1,5 +1,9 @@
 # 2026 世界盃抽獎系統
 
+## Live Demo
+
+- Demo Site: https://worldcup-lottery.vercel.app/
+
 ## 專案更新紀錄 (Feature Updates & Changes)
 
 本專案已針對面試需求完成以下優化與功能擴充：
@@ -14,7 +18,7 @@
 
 ### 3. 架構遷移與雲端部署
 
-- **[Database]**：將本機 SQLite 遷移至 **Supabase (PostgreSQL)**，實現雲端化資料存取，支援多人同時連線。
+- **[Database]**：將本機 SQLite 遷移至 **Supabase (PostgreSQL)**，將資料儲存遷移至 Supabase PostgreSQL，使資料可集中管理並支援雲端部署。
 - **[Deployment]**：完成 **Vercel** 部署，優化建置腳本，移除了不必要的本機環境檢查以利雲端執行。
 
 ---
@@ -107,7 +111,6 @@ pnpm run dev
 正式執行流程：
 
 ```bash
-pnpm run init-db
 pnpm run build
 pnpm run start
 ```
