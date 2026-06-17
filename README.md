@@ -116,11 +116,11 @@ pnpm run start
 
 請在 Vercel 的 Environment Variables 或本機的 `.env` 檔案中設定以下變數：
 
-| 變數                            | 說明                                     |
-| ------------------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase 專案 URL                        |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 公開 API Key                    |
-| `SESSION_SECRET`                | 用於加密 Session 的隨機字串 (可自行生成) |
+| 變數                            | 說明                        |
+| ------------------------------- | --------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase 專案 URL           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 公開 API Key       |
+| `SESSION_SECRET`                | 用於加密 Session 的隨機字串 |
 
 ## 檔案目錄結構
 
