@@ -65,10 +65,6 @@ export function AdminPanel() {
   }, [pool.mapping]);
 
   async function save() {
-    if (invalid) {
-      setError("名額需介於 0 到 10，且總名額不可超過 48。");
-      return;
-    }
     setError("");
     setMessage("");
     const res = await fetch("/api/admin/prize-pool", {
@@ -126,18 +122,24 @@ export function AdminPanel() {
                   min={0}
                   max={10}
                   value={value as number}
-                  onChange={(event) => (setter as (value: number) => void)(Number(event.target.value))}
+                  onChange={(event) => {
+                    (setter as (value: number) => void)(Number(event.target.value));
+                    setMessage("");
+                  }}
                   className="mt-2 w-full border border-white/10 bg-slate-900 px-4 py-3 text-2xl font-black text-white outline-none focus:border-amber-300"
                 />
               </label>
             ))}
           </div>
+          {invalid ? (
+            <p className="mt-4 text-red-200">單項名額最高為 10，且總名額不得超過 48</p>
+          ) : null}
           <div className="mt-6 flex items-center gap-4">
-            <button onClick={save} disabled={invalid} className="bg-amber-300 px-6 py-3 font-black text-slate-950 disabled:opacity-50">儲存並產生隨機對應</button>
+            <button onClick={save} disabled={invalid} className="bg-amber-300 px-6 py-3 font-black text-slate-950 disabled:opacity-50 disabled:cursor-not-allowed">儲存並產生隨機對應</button>
             <button onClick={reset} className="border border-emerald-300/60 px-6 py-3 font-black text-emerald-100 hover:bg-emerald-400 hover:text-slate-950">重設獎池</button>
             <span className={invalid ? "text-red-200" : "text-slate-300"}>目前總名額：{total} / 48</span>
           </div>
-          {message ? <p className="mt-4 text-emerald-200">{message}</p> : null}
+          {message && !invalid ? <p className="mt-4 text-emerald-200">{message}</p> : null}
           {error ? <p className="mt-4 text-red-200">{error}</p> : null}
         </section>
 
