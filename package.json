@@ -8,8 +8,6 @@
     "pnpm": "10.32.1"
   },
   "scripts": {
-    "check-node": "node -e \"const v=process.versions.node;if(v!=='22.14.0'){console.error('Expected Node.js 22.14.0, got '+v+'. Run: nvm use 22.14.0');process.exit(1)}\"",
-    "preinstall": "pnpm run check-node",
     "dev": "next dev",
     "build": "next build",
     "init-db": "tsx scripts/init-db.ts",
