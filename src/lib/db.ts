@@ -1,17 +1,11 @@
-import Database from "better-sqlite3";
-import bcrypt from "bcryptjs";
-import fs from "node:fs";
-import path from "node:path";
-import type { PrizeTier, TeamPrizeMapping } from "./prize";
+import { createClient } from '@supabase/supabase-js';
+import type { PrizeTier, TeamPrizeMapping } from './prize';
 
-export const dbDir = path.join(process.cwd(), "db");
-export const dbPath = path.join(dbDir, "database.sqlite");
-const globalForDb = globalThis as typeof globalThis & { __worldCupDb?: Database.Database };
+// 初始化 Supabase 客戶端
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-function createDatabase() {
-  fs.mkdirSync(dbDir, { recursive: true });
-  return new Database(dbPath);
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type PrizePoolRow = {
   id: number;
@@ -21,7 +15,7 @@ export type PrizePoolRow = {
   first_prize_remaining: number;
   second_prize_remaining: number;
   third_prize_remaining: number;
-  team_mapping: string | null;
+  team_mapping: TeamPrizeMapping[] | null; // Supabase 的 JSONB 會自動解析為陣列/物件
   is_configured: number;
   created_at: string;
   updated_at: string;
@@ -35,76 +29,46 @@ export type SpinSessionRow = {
   prize_tier: PrizeTier | null;
 };
 
-export function getDb() {
-  if (!globalForDb.__worldCupDb) {
-    globalForDb.__worldCupDb = createDatabase();
-    globalForDb.__worldCupDb.pragma("journal_mode = WAL");
-    initializeDb(globalForDb.__worldCupDb);
-  }
-  return globalForDb.__worldCupDb;
+// 為了避免其他檔案 import 報錯，保留這個函式但設為空，因為 Supabase 不需要本地初始化檔案
+export function initializeDb() {
+  console.log('Database is now connected to Supabase!');
 }
 
-export function initializeDb(db?: Database.Database) {
-  const database = db ?? createDatabase();
+// 取得獎池狀態 (改為非同步 async)
+export async function getPrizePool(): Promise<PrizePoolRow> {
+  const { data, error } = await supabase.from('prize_pool').select('*').eq('id', 1).single();
 
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS admins (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL
-    );
+  if (error) throw error;
+  return data as PrizePoolRow;
+}
 
-    CREATE TABLE IF NOT EXISTS prize_pool (
-      id INTEGER PRIMARY KEY DEFAULT 1,
-      first_prize_total INTEGER NOT NULL DEFAULT 0,
-      second_prize_total INTEGER NOT NULL DEFAULT 0,
-      third_prize_total INTEGER NOT NULL DEFAULT 0,
-      first_prize_remaining INTEGER NOT NULL DEFAULT 0,
-      second_prize_remaining INTEGER NOT NULL DEFAULT 0,
-      third_prize_remaining INTEGER NOT NULL DEFAULT 0,
-      team_mapping TEXT,
-      is_configured INTEGER NOT NULL DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+// 解析球隊對應 (因為 JSONB 特性，直接回傳即可)
+export function parseTeamMapping(row: PrizePoolRow): TeamPrizeMapping[] {
+  if (!row.team_mapping) return [];
+  return row.team_mapping;
+}
 
-    CREATE TABLE IF NOT EXISTS spin_sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id TEXT NOT NULL UNIQUE,
-      spin_count INTEGER NOT NULL DEFAULT 0,
-      has_won INTEGER NOT NULL DEFAULT 0,
-      prize_tier TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+// 取得或建立使用者的抽獎 Session (改為非同步 async)
+export async function getOrCreateSpinSession(sessionId: string): Promise<SpinSessionRow> {
+  // 利用 Supabase 的 upsert (如果 session_id 不存在就新增，存在就忽略並回傳)
+  const { data, error } = await supabase
+    .from('spin_sessions')
+    .upsert({ session_id: sessionId }, { onConflict: 'session_id', ignoreDuplicates: true })
+    .select()
+    .single();
 
-  const admin = database.prepare("SELECT id FROM admins WHERE username = ?").get("admin");
-  if (!admin) {
-    database.prepare("INSERT INTO admins (username, password_hash) VALUES (?, ?)").run(
-      "admin",
-      bcrypt.hashSync("admin", 10),
-    );
+  // 如果因為 ignoreDuplicates 沒有回傳 data，我們就直接 select 出來
+  if (!data) {
+    const { data: existingData, error: selectError } = await supabase
+      .from('spin_sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (selectError) throw selectError;
+    return existingData as SpinSessionRow;
   }
 
-  database.prepare("INSERT OR IGNORE INTO prize_pool (id, is_configured, team_mapping) VALUES (1, 0, NULL)").run();
-
-  if (!db) {
-    database.close();
-  }
-}
-
-export function getPrizePool() {
-  return getDb().prepare("SELECT * FROM prize_pool WHERE id = 1").get() as PrizePoolRow;
-}
-
-export function parseTeamMapping(row: PrizePoolRow) {
-  if (!row.team_mapping) return [] as TeamPrizeMapping[];
-  return JSON.parse(row.team_mapping) as TeamPrizeMapping[];
-}
-
-export function getOrCreateSpinSession(sessionId: string) {
-  const db = getDb();
-  db.prepare("INSERT OR IGNORE INTO spin_sessions (session_id) VALUES (?)").run(sessionId);
-  return db.prepare("SELECT * FROM spin_sessions WHERE session_id = ?").get(sessionId) as SpinSessionRow;
+  if (error) throw error;
+  return data as SpinSessionRow;
 }
