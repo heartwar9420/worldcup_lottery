@@ -100,16 +100,16 @@ export function AdminPanel() {
   }
 
   return (
-    <main className="stadium-grid min-h-screen bg-[#071323] px-10 py-8">
+    <main className="stadium-grid min-h-screen bg-[#071323] px-4 py-6 md:px-10 md:py-8">
       <div className="mx-auto max-w-7xl">
-        <header className="flex items-center justify-between border-b border-white/10 pb-6">
-          <h1 className="text-4xl font-black text-white">🏆 抽獎系統後台</h1>
+        <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center">
+          <h1 className="text-2xl font-black text-white sm:text-3xl md:text-4xl">🏆 抽獎系統後台</h1>
           <button onClick={logout} className="border border-amber-300/50 px-5 py-2 font-bold text-amber-100 hover:bg-amber-300 hover:text-slate-950">登出</button>
         </header>
 
-        <section className="mt-8 border border-white/10 bg-slate-950/60 p-6">
-          <h2 className="text-2xl font-black text-amber-200">獎池設定</h2>
-          <div className="mt-5 grid grid-cols-3 gap-5">
+        <section className="mt-8 border border-white/10 bg-slate-950/60 p-4 md:p-6">
+          <h2 className="text-xl font-black text-amber-200 md:text-2xl">獎池設定</h2>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {[
               ["一等獎名額", first, setFirst],
               ["二等獎名額", second, setSecond],
@@ -134,7 +134,7 @@ export function AdminPanel() {
           {invalid ? (
             <p className="mt-4 text-red-200">單項名額最高為 10，且總名額不得超過 48</p>
           ) : null}
-          <div className="mt-6 flex items-center gap-4">
+          <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
             <button onClick={save} disabled={invalid} className="bg-amber-300 px-6 py-3 font-black text-slate-950 disabled:opacity-50 disabled:cursor-not-allowed">儲存並產生隨機對應</button>
             <button onClick={reset} className="border border-emerald-300/60 px-6 py-3 font-black text-emerald-100 hover:bg-emerald-400 hover:text-slate-950">重設獎池</button>
             <span className={invalid ? "text-red-200" : "text-slate-300"}>目前總名額：{total} / 48</span>
@@ -143,30 +143,33 @@ export function AdminPanel() {
           {error ? <p className="mt-4 text-red-200">{error}</p> : null}
         </section>
 
-        <section className="mt-6 grid grid-cols-3 gap-5">
+        <section className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
           {[
             ["一等獎", pool.firstPrizeTotal, pool.firstPrizeTotal - pool.firstPrizeRemaining, pool.firstPrizeRemaining],
             ["二等獎", pool.secondPrizeTotal, pool.secondPrizeTotal - pool.secondPrizeRemaining, pool.secondPrizeRemaining],
             ["三等獎", pool.thirdPrizeTotal, pool.thirdPrizeTotal - pool.thirdPrizeRemaining, pool.thirdPrizeRemaining],
           ].map(([label, totalCount, drawn, remaining]) => (
-            <div key={label as string} className="border border-white/10 bg-slate-950/60 p-6">
+            <div key={label as string} className="border border-white/10 bg-slate-950/60 p-4 md:p-6">
               <h3 className="text-xl font-black text-white">{label as string}</h3>
-              <p className="mt-4 text-lg text-slate-200">設定 {totalCount as number} / 已抽 {drawn as number} / 剩餘 <span className="font-black text-amber-200">{remaining as number}</span></p>
+              <div className="mt-4 flex flex-col text-lg text-slate-200 lg:flex-row lg:items-center lg:gap-2">
+                <p className="whitespace-nowrap">設定 {totalCount as number} / 已抽 {drawn as number}</p>
+                <p className="mt-1 whitespace-nowrap lg:mt-0">剩餘 <span className="font-black text-amber-200">{remaining as number}</span></p>
+              </div>
             </div>
           ))}
         </section>
 
-        <section className="mt-6 border border-white/10 bg-slate-950/60 p-6">
-          <button onClick={() => setExpanded((value) => !value)} className="flex w-full items-center justify-between text-left text-2xl font-black text-amber-200">
+        <section className="mt-6 border border-white/10 bg-slate-950/60 p-4 md:p-6">
+          <button onClick={() => setExpanded((value) => !value)} className="flex w-full items-center justify-between text-left text-xl font-black text-amber-200 md:text-2xl">
             球隊-獎項對應
             <span>{expanded ? "收合" : "展開"}</span>
           </button>
           {expanded ? (
-            <div className="mt-5 grid max-h-[420px] grid-cols-4 gap-3 overflow-auto pr-2">
+            <div className="mt-5 grid max-h-[420px] grid-cols-1 gap-3 overflow-auto pr-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {rows.map((row) => (
-                <div key={row.code} className="flex items-center justify-between border border-white/10 bg-slate-900/80 px-3 py-2">
-                  <span className="font-bold text-white">{row.flag} {row.code}</span>
-                  <span className={row.prize === "none" ? "text-slate-400" : "text-amber-200"}>
+                <div key={row.code} className="flex items-center justify-between gap-2 border border-white/10 bg-slate-900/80 px-3 py-2">
+                  <span className="whitespace-nowrap font-bold text-white">{row.flag} {row.code}</span>
+                  <span className={`whitespace-nowrap ${row.prize === "none" ? "text-slate-400" : "text-amber-200"}`}>
                     {row.prize === "none" ? "謝謝參與" : PRIZE_LABELS[row.prize]}
                   </span>
                 </div>
