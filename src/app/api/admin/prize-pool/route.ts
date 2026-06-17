@@ -1,12 +1,12 @@
-import { getDb, getPrizePool, parseTeamMapping } from "@/lib/db";
-import { generatePrizeMapping } from "@/lib/prize";
-import { isAdminAuthenticated } from "@/lib/session";
+import { supabase, getPrizePool, parseTeamMapping } from '@/lib/db';
+import { generatePrizeMapping } from '@/lib/prize';
+import { isAdminAuthenticated } from '@/lib/session';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 async function guard() {
   if (!(await isAdminAuthenticated())) {
-    return Response.json({ error: "未登入。" }, { status: 401 });
+    return Response.json({ error: '未登入。' }, { status: 401 });
   }
   return null;
 }
@@ -14,7 +14,9 @@ async function guard() {
 export async function GET() {
   const denied = await guard();
   if (denied) return denied;
-  const pool = getPrizePool();
+
+  // 記得加上 await！
+  const pool = await getPrizePool();
 
   return Response.json({
     firstPrizeTotal: pool.first_prize_total,
@@ -43,26 +45,39 @@ export async function POST(request: Request) {
   const third = Number(body?.thirdPrize ?? -1);
 
   if ([first, second, third].some((value) => !Number.isInteger(value) || value < 0 || value > 10)) {
-    return Response.json({ error: "各獎項名額需為 0 到 10 的整數。" }, { status: 400 });
+    return Response.json({ error: '各獎項名額需為 0 到 10 的整數。' }, { status: 400 });
   }
   if (first + second + third > 48) {
-    return Response.json({ error: "總名額不可超過 48。" }, { status: 400 });
+    return Response.json({ error: '總名額不可超過 48。' }, { status: 400 });
   }
 
   const mapping = generatePrizeMapping(first, second, third);
-  getDb()
-    .transaction(() => {
-      getDb()
-        .prepare(
-          `UPDATE prize_pool
-           SET first_prize_total = ?, second_prize_total = ?, third_prize_total = ?,
-               first_prize_remaining = ?, second_prize_remaining = ?, third_prize_remaining = ?,
-               team_mapping = ?, is_configured = 1, updated_at = CURRENT_TIMESTAMP
-           WHERE id = 1`,
-        )
-        .run(first, second, third, first, second, third, JSON.stringify(mapping));
-      getDb().prepare("DELETE FROM spin_sessions").run();
-    })();
 
-  return Response.json({ success: true });
+  try {
+    const now = new Date().toISOString();
+
+    // 1. 寫入全新的獎池設定
+    await supabase
+      .from('prize_pool')
+      .update({
+        first_prize_total: first,
+        second_prize_total: second,
+        third_prize_total: third,
+        first_prize_remaining: first,
+        second_prize_remaining: second,
+        third_prize_remaining: third,
+        team_mapping: mapping, // 傳入陣列即可，Supabase 自動轉換
+        is_configured: 1,
+        updated_at: now,
+      })
+      .eq('id', 1);
+
+    // 2. 清空舊的抽獎紀錄
+    await supabase.from('spin_sessions').delete().neq('id', -1);
+
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error('Config error:', error);
+    return Response.json({ error: '設定失敗，請稍後再試。' }, { status: 500 });
+  }
 }
